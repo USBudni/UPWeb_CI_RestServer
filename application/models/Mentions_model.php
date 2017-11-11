@@ -8,7 +8,7 @@ class Mentions_model extends CI_Model {
     }
 
     public function getMentions(){
-    	$query = $this->db->get('mention');
+    	$query = $this->db->get('tweets');
     	$row = array();
 
     	if(count($query->result_array()) > 0){

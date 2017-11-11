@@ -37,9 +37,9 @@ class Tag_model extends CI_Model {
     }
 
     public function saveTag($data){
-        
         $newTag = Array(
-            'nome' => $data['tag'][0]['nome']
+            'nome' => $data['nome'],
+            'user_id' => $data['user_id'],
         );
        
         $sql = $this->db->insert('tags', $newTag);
@@ -53,10 +53,10 @@ class Tag_model extends CI_Model {
     }
 
     public function updateTag($data){
-        $select = $this->db->query('select * from tags where id = ?', $data['tag'][0]['id']);
+        $select = $this->db->query('select * from tags where id = ?', $data['id']);
         if(count($select->result_array()) > 0){
-            $this->db->set('nome', $data['tag'][1]['nome']);
-            $this->db->where('id', $data['tag'][0]['id']);
+            $this->db->set('nome', $data['nome']);
+            $this->db->where('id', $data['user_id']);
             $result = $this->db->update('tags');
 
             if($result){
@@ -68,7 +68,6 @@ class Tag_model extends CI_Model {
     }
 
     public function deleteTag($data){
-        var_dump($data);
     	$sql = $this->db->delete('tags', array('id' => $data['id']));
     	if($sql){
     		return true;

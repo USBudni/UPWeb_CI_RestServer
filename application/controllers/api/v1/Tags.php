@@ -127,7 +127,6 @@ class Tags extends REST_Controller {
         
         // // $this->some_model->update_user( ... );
         $data = $this->put();
-        var_dump($data);
         if($this->Tag_model->updateTag($data)){
             $message = [
                 'message' => 'Registro atualizado'
