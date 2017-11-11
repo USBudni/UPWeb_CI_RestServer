@@ -2,7 +2,7 @@
 
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Token extends CI_Controller {
+class Token_model extends CI_Model {
 
     function __construct()
     {
@@ -20,7 +20,7 @@ class Token extends CI_Controller {
     }
 
     public function verifyToken($user, $token){
-        $select = $this->db->query('select user,login from users where user_login = ? and user_token = ?', $user, $token);
+        $select = $this->db->query('select user_login from users where user_login = ? and token = ?', array($user, $token));
         $verify = false;
         if(count($select->result_array()) > 0){
             $verify = true;

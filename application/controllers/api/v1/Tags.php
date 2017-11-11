@@ -23,126 +23,158 @@ class Tags extends REST_Controller {
     public function tags_get()
     {
 
-        $id = $this->get('id');
-              
-        // If the id parameter doesn't exist return all the tags
+        parse_str($_SERVER['QUERY_STRING'], $param);
+        $this->load->model('Token_model');  
 
-        $this->load->model('Tag_model');   
-        if ($id == NULL)
-        {        
-            $tagsArray = $this->Tag_model->getTags();
-            if ($tagsArray == NULL)
+        if ($this->Token_model->verifyToken($param['login'],$param['token'])){
+
+            $id = $this->get('id');
+                
+            // If the id parameter doesn't exist return all the tags
+
+            $this->load->model('Tag_model');   
+            if ($id == NULL)
+            {        
+                $tagsArray = $this->Tag_model->getTags();
+                if ($tagsArray == NULL)
+                {
+                    // Set the response and exit
+                    $this->response([
+                        'status' => FALSE,
+                        'message' => 'No tags were found'
+                    ], REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
+                }
+                else
+                {
+                    $this->response($tagsArray, REST_Controller::HTTP_OK);
+                }
+            }
+
+            // Find and return a single record for a particular user.
+
+            $id = (int) $id;
+
+            // Validate the id.
+            if ($id <= 0)
             {
-                // Set the response and exit
-                $this->response([
-                    'status' => FALSE,
-                    'message' => 'No tags were found'
-                ], REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
+                // Invalid id, set the response and exit.
+                $this->response(NULL, REST_Controller::HTTP_BAD_REQUEST); // BAD_REQUEST (400) being the HTTP response code
+            }
+
+            // Get the user from the array, using the id as key for retrieval.
+            // Usually a model is to be used for this.
+
+            $tag = NULL;
+            $tags = $this->Tag_model->getTags();        
+            if (!empty($tags))
+            {
+                foreach ($tags as $key => $value)
+                {
+                    if (isset($value['id']) && (int)$value['id'] === $id)
+                    {
+                        $tag = $value;
+                    }
+                }
+            }
+            
+            if (!empty($tag))
+            {
+                $this->set_response($tag, REST_Controller::HTTP_OK); // OK (200) being the HTTP response code
             }
             else
             {
-                $this->response($tagsArray, REST_Controller::HTTP_OK);
+                $this->set_response([
+                    'status' => FALSE,
+                    'message' => 'Tag(s) nao encontrada(s)'
+                ], REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
             }
-        }
-
-        // Find and return a single record for a particular user.
-
-        $id = (int) $id;
-
-        // Validate the id.
-        if ($id <= 0)
-        {
-            // Invalid id, set the response and exit.
-            $this->response(NULL, REST_Controller::HTTP_BAD_REQUEST); // BAD_REQUEST (400) being the HTTP response code
-        }
-
-        // Get the user from the array, using the id as key for retrieval.
-        // Usually a model is to be used for this.
-
-        $tag = NULL;
-        $tags = $this->Tag_model->getTags();        
-        if (!empty($tags))
-        {
-            foreach ($tags as $key => $value)
-            {
-                if (isset($value['id']) && (int)$value['id'] === $id)
-                {
-                    $tag = $value;
-                }
-            }
-        }
-        
-        if (!empty($tag))
-        {
-            $this->set_response($tag, REST_Controller::HTTP_OK); // OK (200) being the HTTP response code
         }
         else
         {
-            $this->set_response([
-                'status' => FALSE,
-                'message' => 'Tag(s) nao encontrada(s)'
-            ], REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
+            $this->set_response([               
+                'message' => 'Token inválido'
+            ],  REST_Controller::HTTP_BAD_REQUEST);
         }
     }
 
     public function tags_post()
-    {        
+    {  
+              
         $this->load->model('Tag_model'); 
         $data = $this->post();
-        // $json = file_get_contents('php://input');
-        // $dataDecoded = html_entity_decode($json);
-        // $data = json_decode($dataDecoded);
-       
-        // $this->some_model->update_user( ... );
-        $result = $this->Tag_model->saveTag($data);
-        // $message = [
-        //     'id' => 100, // Automatically generated by the model
-        //     'name' => $this->post('name'),
-        //     'email' => $this->post('email'),
-        //     'message' => 'Added a resource'
-        // ];
-        if ($result)
-        {
-            $message = [
-                // 'id' => 100, // Automatically generated by the model
-               'message' => 'Tag adicionada.'
-            ];   
-            $this->set_response($message, REST_Controller::HTTP_CREATED); // CREATED (201) being the HTTP response code
+        $this->load->model('Token_model');
+        if ($this->Token_model->verifyToken($data['login'],$data['token'])){
+
+            // $json = file_get_contents('php://input');
+            // $dataDecoded = html_entity_decode($json);
+            // $data = json_decode($dataDecoded);
+        
+            // $this->some_model->update_user( ... );
+            $result = $this->Tag_model->saveTag($data);
+            // $message = [
+            //     'id' => 100, // Automatically generated by the model
+            //     'name' => $this->post('name'),
+            //     'email' => $this->post('email'),
+            //     'message' => 'Added a resource'
+            // ];
+            if ($result)
+            {
+                $message = [
+                    // 'id' => 100, // Automatically generated by the model
+                'message' => 'Tag adicionada.'
+                ];   
+                $this->set_response($message, REST_Controller::HTTP_CREATED); // CREATED (201) being the HTTP response code
+            }
+            else
+            {
+                $message = [
+                    // 'id' => 100, // Automatically generated by the model
+                    'nome' => $this->post('nome'),
+                    'message' => 'Erro ao criar tag.'
+                ]; 
+                $this->set_response($message, REST_Controller::HTTP_BAD_REQUEST);
+            }
         }
         else
         {
-            $message = [
-                // 'id' => 100, // Automatically generated by the model
-                'nome' => $this->post('nome'),
-                'message' => 'Erro ao criar tag.'
-            ]; 
-            $this->set_response($message, REST_Controller::HTTP_BAD_REQUEST);
+            $this->set_response([               
+                'message' => 'Token inválido'
+            ],  REST_Controller::HTTP_BAD_REQUEST);
         }
     }
     
     public function tags_put()
     {
-        
-        $this->load->model('Tag_model'); 
-        
-        // // $this->some_model->update_user( ... );
         $data = $this->put();
-        if($this->Tag_model->updateTag($data)){
-            $message = [
-                'message' => 'Registro atualizado'
-            ];
-            $this->set_response($message, REST_Controller::HTTP_CREATED); // CREATED (201) being the HTTP response code
+        $this->load->model('Token_model');
+        if ($this->Token_model->verifyToken($data['login'],$data['token'])){
+
+            $this->load->model('Tag_model'); 
+            
+            // // $this->some_model->update_user( ... );
+            
+            if($this->Tag_model->updateTag($data)){
+                $message = [
+                    'message' => 'Registro atualizado'
+                ];
+                $this->set_response($message, REST_Controller::HTTP_CREATED); // CREATED (201) being the HTTP response code
+            }
+            else
+            {
+                $message = [
+                    'message' => 'Não foi possível atualizar registro'
+                ];
+                $this->set_response($message, REST_Controller::HTTP_BAD_REQUEST); // CREATED (201) being the HTTP response code
+            }
         }
         else
         {
-            $message = [
-                'message' => 'Não foi possível atualizar registro'
-            ];
-            $this->set_response($message, REST_Controller::HTTP_BAD_REQUEST); // CREATED (201) being the HTTP response code
+            $this->set_response([               
+                'message' => 'Token inválido'
+            ],  REST_Controller::HTTP_BAD_REQUEST);
         }
-
-        
     }
+
 
     public function tags_delete()
     {
@@ -150,32 +182,41 @@ class Tags extends REST_Controller {
         $json = json_decode($data,true);
         $id = $json['id'];
 
-        // Validate the id.
-        if ($id <= 0)
-        {
-            $message = [            
-                'message' => 'Registro invalido'
-            ];
-            // Set the response and exit
-            $this->response($message, REST_Controller::HTTP_BAD_REQUEST); // BAD_REQUEST (400) being the HTTP response code
-            
-        }
-       
-        $this->load->model('Tag_model'); 
-        // $this->some_model->delete_something($id);
+        $this->load->model('Token_model');
+        if ($this->Token_model->verifyToken($json['login'],$json['token'])){
+            // Validate the id.
+            if ($id <= 0)
+            {
+                $message = [            
+                    'message' => 'Registro invalido'
+                ];
+                // Set the response and exit
+                $this->response($message, REST_Controller::HTTP_BAD_REQUEST); // BAD_REQUEST (400) being the HTTP response code
+                
+            }
+        
+            $this->load->model('Tag_model'); 
+            // $this->some_model->delete_something($id);
 
-        if($this->Tag_model->deleteTag($json)){
-            $message = [            
-                'message' => 'Registro deletado'
-            ];
-            $this->set_response($message, REST_Controller::HTTP_OK);
+            if($this->Tag_model->deleteTag($json)){
+                $message = [            
+                    'message' => 'Registro deletado'
+                ];
+                $this->set_response($message, REST_Controller::HTTP_OK);
+            }
+            else
+            {
+                $message = [            
+                    'message' => 'Nenhum registro deletado'
+                ];
+                $this->set_response($message, REST_Controller::HTTP_NO_CONTENT); // NO_CONTENT (204) being the HTTP response code
+            }
         }
         else
         {
-            $message = [            
-                'message' => 'Nenhum registro deletado'
-            ];
-            $this->set_response($message, REST_Controller::HTTP_NO_CONTENT); // NO_CONTENT (204) being the HTTP response code
+            $this->set_response([               
+                'message' => 'Token inválido'
+            ],  REST_Controller::HTTP_BAD_REQUEST);
         }
     }
 
